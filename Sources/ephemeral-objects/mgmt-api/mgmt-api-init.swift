@@ -28,63 +28,35 @@ func register_rest_api_calls(app: Application) {
             try await FileSystem.shared.createDirectory(at: dir_path, withIntermediateDirectories: true, permissions: .ownerReadWrite)
         }
 
-        let fileHandle = try await req.application.fileio.openFile(
-            path: "/tmp/ephemeral/\(req.id)",
-            mode: .write,
-            flags: .allowFileCreation(),
-            eventLoop: req.eventLoop
-        ).get()
-        defer { try? fileHandle.close() }
-        var offset: Int64 = 0
-        for try await buffer in req.body {
-            try await req.application.fileio.write(
-                fileHandle: fileHandle,
-                toOffset: offset,
-                buffer: buffer,
-                eventLoop: req.eventLoop
-            ).get()
-            offset += Int64(buffer.readableBytes)
+        try await FileSystem.shared.withFileHandle(
+            forWritingAt: FilePath("\(dir)/\(req.id)")
+        ) { fileHandle in
+            let offsetBox = OffsetBox()
+
+            req.body.drain { chunk -> EventLoopFuture<Void> in
+                let promise = req.eventLoop.makePromise(of: Void.self)
+
+                Task {
+                    switch chunk {
+                    case .buffer(let byteBuffer):
+                        let chunkSize = Int64(byteBuffer.readableBytes)
+                        let writeOffset = offsetBox.getAndIncrement(by: chunkSize)
+                        try await fileHandle.write(
+                            contentsOf: byteBuffer.readableBytesView,
+                            toAbsoluteOffset: writeOffset
+                        )
+                    case .error(let error):
+                        promise.fail(error)
+                    case .end:
+                        promise.succeed()
+                    }
+
+                }
+
+                return promise.futureResult
+            }
         }
-        // for try await part in req.body {
-        //     fileHandle?.seekToEndOfFile()
-        //     fileHandle?.write(Data(buffer: part))
-        //     print("Wrote \(part.readableBytes)")
-        //     fileHandle.
-        // }
-        // try fileHandle?.close()
 
-        // // Prep output file
-        // let file_destination_path = "/tmp/ephemeral/\(req.id)"
-        // let file_path: FilePath = FilePath(file_destination_path)
-        // let fileHandle: WriteFileHandle = try await FileSystem.shared.openFile(
-        //     forWritingAt: file_path,
-        //     options: .newFile(replaceExisting: true)
-        //     )
-        // defer {
-        //     Task {
-        //         try? await fileHandle.close()
-        //     }
-        // }
-
-        // // req.body.data will be nil. You must drain chunks sequentially:
-        // req.body.drain { part in
-        //     switch part {
-        //     case .buffer(let buffer):
-        //         // Process or write each incoming chunk to disk/S3 here
-        //         print("Received chunk of \(buffer.readableBytes) bytes")
-        //         // try await fileHandle.write(
-        //         //     contentsOf: part,
-        //         //     toOffset: currentOffset
-        //         // )
-        //         req.application.fileio.write(fileHandle: fileHandle, toOffset: Int64, buffer: ByteBuffer, eventLoop: any EventLoop)
-
-        //     case .error(let error):
-        //         print("Streaming error: \(error)")
-        //     case .end:
-        //         print("Streaming finished")
-        //     }
-        //     return req.eventLoop.makeSucceededFuture(())
-        // }
         return .ok
     }
 
@@ -132,4 +104,17 @@ struct PageContext: Encodable {
     let title: String
     let description: String
     let activePage: String
+}
+
+private final class OffsetBox: @unchecked Sendable {
+    private let queue = DispatchQueue(label: "com.vapor.upload.offset")
+    private var value: Int64 = 0
+    
+    func getAndIncrement(by amount: Int64) -> Int64 {
+        queue.sync {
+            let current = value
+            value += amount
+            return current
+        }
+    }
 }
