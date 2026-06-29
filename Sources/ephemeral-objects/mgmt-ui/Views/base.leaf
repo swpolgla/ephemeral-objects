@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="#(description)">
+    <meta name="theme-color" content="#f6f4ef">
+    <title>#(title) · Ephemeral</title>
+    <link rel="icon" href="/assets/mark.svg?v=2" type="image/svg+xml">
+    <link rel="stylesheet" href="/css/site.css?v=2">
+    <script src="/js/site.js?v=2" defer></script>
+</head>
+<body data-page="#(activePage)">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+    <div class="site-shell">
+        <header class="site-header">
+            <a class="brand" href="/" aria-label="Ephemeral home">
+                <img src="/assets/mark.svg?v=2" alt="" width="32" height="32">
+                <span>Ephemeral</span>
+            </a>
+            <nav class="site-nav" aria-label="Primary navigation">
+                <a href="/" data-nav="home">Share</a>
+                <a href="/about" data-nav="about">About</a>
+                <a class="nav-cta" href="/#upload">Send a file</a>
+            </nav>
+        </header>
+
+        <main id="main-content">
+            #import("content")
+        </main>
+
+        <footer class="site-footer">
+            <div>
+                <a class="brand brand--small" href="/">
+                    <img src="/assets/mark.svg?v=2" alt="" width="26" height="26">
+                    <span>Ephemeral</span>
+                </a>
+                <p>Share what matters. Keep nothing forever.</p>
+            </div>
+            <div class="footer-meta">
+                <a href="/about">How it works</a>
+                <span>Built with care and Swift.</span>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>

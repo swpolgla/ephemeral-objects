@@ -1,0 +1,5 @@
+{
+    "object-store-location": "/tmp/objstore",
+    "maximum-upload-size": 1,
+    "maximum-upload-duration": 1
+}

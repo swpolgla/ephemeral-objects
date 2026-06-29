@@ -1,0 +1,47 @@
+#extend("base"):
+    #export("content"):
+        <section class="page-hero">
+            <p class="eyebrow"><span></span> About Ephemeral</p>
+            <h1>The internet remembers enough already.</h1>
+            <p>Ephemeral is a work in progress toward file sharing that is simple when you need it and absent when you do not.</p>
+        </section>
+
+        <section class="manifesto section">
+            <div class="manifesto-index">01 — The idea</div>
+            <div class="manifesto-copy">
+                <h2>Useful now.<br><em>Gone later.</em></h2>
+                <p>Most file-sharing products begin with storage. Ephemeral begins with a moment: a document for a coworker, photos for family, or a large file that simply needs to get from here to there.</p>
+                <p>We are designing the service so that the link is the whole experience—without an account, a library to manage, or files lingering without purpose.</p>
+            </div>
+        </section>
+
+        <section class="values-grid section">
+            <article class="value-card value-card--accent">
+                <span>Privacy</span>
+                <h3>Designed so the contents belong to the people sharing them.</h3>
+                <p>End-to-end encryption is part of the product vision. Its precise implementation will be documented before the service handles real files.</p>
+            </article>
+            <article class="value-card">
+                <span>Impermanence</span>
+                <h3>Retention should be a deliberate choice, not a default.</h3>
+                <p>Automatic expiry is planned as a core behavior, giving each file a clear and finite lifecycle.</p>
+            </article>
+            <article class="value-card">
+                <span>Simplicity</span>
+                <h3>Sharing a file should take seconds, not a new relationship with an app.</h3>
+                <p>No account ceremony. No crowded dashboard. Just a file and a link for the person who needs it.</p>
+            </article>
+        </section>
+
+        <section class="status-panel section">
+            <div>
+                <p class="eyebrow">Where things stand</p>
+                <h2>An honest early look.</h2>
+            </div>
+            <div>
+                <p>The upload interface now submits files to the service’s <code>POST /files</code> endpoint. That endpoint is still a development placeholder and does not yet persist files or return download links; the security and expiry systems described here remain the direction—not yet a production promise.</p>
+                <a class="button button--dark" href="/#upload">Try the prototype <span>→</span></a>
+            </div>
+        </section>
+    #endexport
+#endextend

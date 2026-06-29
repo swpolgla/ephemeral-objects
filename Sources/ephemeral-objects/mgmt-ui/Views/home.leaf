@@ -1,0 +1,113 @@
+#extend("base"):
+    #export("content"):
+        <section class="hero">
+            <div class="hero-copy">
+                <p class="eyebrow"><span></span> Private by design. Temporary on purpose.</p>
+                <h1>Send the file.<br><em>Skip the footprint.</em></h1>
+                <p class="hero-lede">A simple place to share files through private links designed to disappear—no account, no clutter, no awkward attachment limits.</p>
+                <div class="trust-row" aria-label="Product principles">
+                    <span><i class="trust-icon">✓</i>No sign-up</span>
+                    <span><i class="trust-icon">✓</i>Encryption-first vision</span>
+                    <span><i class="trust-icon">✓</i>Automatic expiry</span>
+                </div>
+            </div>
+
+            <div class="upload-wrap" id="upload">
+                <div class="upload-card" data-uploader>
+                    <div class="upload-idle" data-state="idle">
+                        <input class="file-input" id="file-input" type="file" data-file-input>
+                        <label class="drop-zone" for="file-input" data-drop-zone>
+                            <span class="upload-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg>
+                            </span>
+                            <strong>Drop a file right here</strong>
+                            <span>or <u>choose from your device</u></span>
+                            <small>One file at a time · Up to 1 GB</small>
+                        </label>
+                    </div>
+
+                    <div class="upload-progress" data-state="progress" hidden>
+                        <div class="file-badge" aria-hidden="true">FILE</div>
+                        <div class="file-details">
+                            <strong data-file-name></strong>
+                            <span data-file-size></span>
+                            <div class="progress-track"><span data-progress-bar></span></div>
+                            <small data-progress-label>Preparing secure link… 0%</small>
+                        </div>
+                    </div>
+
+                    <div class="upload-complete" data-state="complete" hidden>
+                        <div class="success-mark" aria-hidden="true">✓</div>
+                        <p class="eyebrow">Your link is ready</p>
+                        <h2>Ready to pass along.</h2>
+                        <p>The server accepted your file and returned this download link.</p>
+                        <div class="link-field">
+                            <input type="text" readonly data-share-link aria-label="Download link">
+                            <button class="button button--dark" type="button" data-copy-link>Copy link</button>
+                        </div>
+                        <button class="text-button" type="button" data-reset>Share another file</button>
+                    </div>
+
+                    <div class="upload-complete" data-state="accepted" hidden>
+                        <div class="success-mark" aria-hidden="true">✓</div>
+                        <p class="eyebrow">Upload accepted</p>
+                        <h2>The endpoint responded.</h2>
+                        <p>Your file was sent successfully, but the server did not return a download URL or file hash yet.</p>
+                        <button class="button button--dark" type="button" data-reset>Share another file</button>
+                    </div>
+                    <p class="upload-status" data-status role="status" aria-live="polite"></p>
+                </div>
+                <div class="upload-caption">
+                    <span><span class="status-dot"></span>Connected to /files</span>
+                    <span>Uploads use a multipart POST request</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="how-it-works section">
+            <div class="section-heading">
+                <p class="eyebrow">Delightfully uncomplicated</p>
+                <h2>From your hands to theirs,<br>in three quiet steps.</h2>
+            </div>
+            <ol class="steps">
+                <li>
+                    <span class="step-number">01</span>
+                    <div class="step-icon"><svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4M5 15v4h14v-4"/></svg></div>
+                    <h3>Choose a file</h3>
+                    <p>Drop in whatever you need to send. No account or profile required.</p>
+                </li>
+                <li>
+                    <span class="step-number">02</span>
+                    <div class="step-icon"><svg viewBox="0 0 24 24"><path d="M8.5 15.5l7-7M7 11H5a4 4 0 0 0 0 8h4a4 4 0 0 0 3.7-2.5M17 13h2a4 4 0 0 0 0-8h-4a4 4 0 0 0-3.7 2.5"/></svg></div>
+                    <h3>Copy the link</h3>
+                    <p>Get a unique sharing link ready for a message, email, or conversation.</p>
+                </li>
+                <li>
+                    <span class="step-number">03</span>
+                    <div class="step-icon"><svg viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7L6 7Zm3-3h6l1 3H8l1-3Zm1 7v5m4-5v5"/></svg></div>
+                    <h3>Let it disappear</h3>
+                    <p>The product is being designed to expire files automatically when their moment is over.</p>
+                </li>
+            </ol>
+        </section>
+
+        <section class="principles section">
+            <div class="principles-card">
+                <div class="principles-copy">
+                    <p class="eyebrow eyebrow--light">A smaller digital wake</p>
+                    <h2>Files should not have to live forever.</h2>
+                    <p>Ephemeral is being built around a simple belief: sharing something today should not mean storing it indefinitely.</p>
+                    <a class="button button--light" href="/about">Our thinking <span>→</span></a>
+                </div>
+                <div class="orbit-art" aria-hidden="true">
+                    <div class="orbit orbit--one"></div>
+                    <div class="orbit orbit--two"></div>
+                    <div class="orbit-core"><img src="/assets/mark-light.svg?v=2" alt=""></div>
+                    <span class="orbit-label orbit-label--top">Encrypted</span>
+                    <span class="orbit-label orbit-label--right">Shared</span>
+                    <span class="orbit-label orbit-label--bottom">Expired</span>
+                </div>
+            </div>
+        </section>
+    #endexport
+#endextend
