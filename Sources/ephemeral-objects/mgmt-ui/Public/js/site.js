@@ -73,8 +73,8 @@
             status.textContent = "Choose a file with some content to continue.";
             return;
         }
-        if (file.size > 2 * 1024 * 1024 * 1024) {
-            status.textContent = "That file is larger than the 2 GB prototype limit.";
+        if (file.size > 1024 * 1024 * 1024) {
+            status.textContent = "That file is larger than the 1 GB prototype limit.";
             return;
         }
 
@@ -85,12 +85,12 @@
         progressLabel.textContent = "Uploading… 0%";
         status.textContent = `Uploading ${file.name}.`;
 
-        const formData = new FormData();
-        formData.append("file", file, file.name);
-
         activeRequest = new XMLHttpRequest();
         activeRequest.open("POST", "/files");
         activeRequest.setRequestHeader("Accept", "application/json, text/plain");
+        activeRequest.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+        activeRequest.setRequestHeader("X-File-Name", encodeURIComponent(file.name));
+        activeRequest.setRequestHeader("X-File-Size", String(file.size));
 
         activeRequest.upload.addEventListener("progress", (event) => {
             if (!event.lengthComputable) return;
@@ -134,7 +134,7 @@
             activeRequest = null;
         });
 
-        activeRequest.send(formData);
+        activeRequest.send(file);
     };
 
     input.addEventListener("change", () => uploadFile(input.files[0]));

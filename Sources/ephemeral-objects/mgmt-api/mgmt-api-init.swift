@@ -7,6 +7,11 @@ struct FileUpload: Content {
     var file: Data
 }
 
+struct FileUploadResponse: Content {
+    let id: String
+    let downloadURL: String
+}
+
 
 func register_rest_api_calls(app: Application) {
 
@@ -18,46 +23,52 @@ func register_rest_api_calls(app: Application) {
 
     files.get(":hash") { req in
         let hash: String = req.parameters.get("hash")!
-        return "FILES - \(hash)"
+        let file: String = "/tmp/ephemeral/\(hash)"
+        if !FileManager.default.fileExists(atPath: file) {
+            return Response(status: .notFound, body: "The requested file hash does not exist.")
+        }
+        return try await req.fileio.asyncStreamFile(at: "/tmp/ephemeral/\(hash)")
     }
 
-    files.on(.POST, body: .stream) { req async throws -> HTTPStatus in
-        let dir = "/tmp/ephemeral"
-        let dir_path = FilePath(dir)
+    files.on(.POST, body: .stream) { req async throws -> Response in
+        let dir: String = "/tmp/ephemeral"
+        let dir_path: FilePath = FilePath(dir)
         if !FileManager.default.fileExists(atPath: dir) {
             try await FileSystem.shared.createDirectory(at: dir_path, withIntermediateDirectories: true, permissions: .ownerReadWrite)
         }
 
-        try await FileSystem.shared.withFileHandle(
-            forWritingAt: FilePath("\(dir)/\(req.id)")
-        ) { fileHandle in
-            let offsetBox = OffsetBox()
+        var sizeExceeded: Bool = false
+        let id: String = req.id
+        let filePath: String = "\(dir)/\(id)"
 
-            req.body.drain { chunk -> EventLoopFuture<Void> in
-                let promise = req.eventLoop.makePromise(of: Void.self)
-
-                Task {
-                    switch chunk {
-                    case .buffer(let byteBuffer):
-                        let chunkSize = Int64(byteBuffer.readableBytes)
-                        let writeOffset = offsetBox.getAndIncrement(by: chunkSize)
-                        try await fileHandle.write(
-                            contentsOf: byteBuffer.readableBytesView,
-                            toAbsoluteOffset: writeOffset
-                        )
-                    case .error(let error):
-                        promise.fail(error)
-                    case .end:
-                        promise.succeed()
-                    }
-
-                }
-
-                return promise.futureResult
+        defer {
+            if sizeExceeded {
+                try? FileManager.default.removeItem(atPath: filePath)
             }
         }
 
-        return .ok
+        try await FileSystem.shared.withFileHandle(
+            forWritingAt: FilePath(filePath)
+        ) { fileHandle in
+            var byteCount: Int = 0
+            try await fileHandle.withBufferedWriter(capacity: .mebibytes(4)) { writer in
+                for try await byteBuffer: Request.Body.AsyncIterator.Element in req.body {
+                    byteCount += byteBuffer.readableBytes
+                    if byteCount > 1024 * 1024 * 1024 {
+                        sizeExceeded = true
+                        break
+                    }
+                    try await writer.write(contentsOf: byteBuffer)
+                }
+            }
+        }
+
+        if sizeExceeded {
+            // return Response(status: .payloadTooLarge, body: "Files larger than 1GiB are not accepted.")
+            return try await FileUploadResponse(id: id, downloadURL: "").encodeResponse(status: .payloadTooLarge, for: req)
+        }
+
+        return try await FileUploadResponse(id: id, downloadURL: "/files/\(id)").encodeResponse(status: .created, for: req)
     }
 
     app.get { req async throws -> View in
@@ -104,17 +115,4 @@ struct PageContext: Encodable {
     let title: String
     let description: String
     let activePage: String
-}
-
-private final class OffsetBox: @unchecked Sendable {
-    private let queue = DispatchQueue(label: "com.vapor.upload.offset")
-    private var value: Int64 = 0
-    
-    func getAndIncrement(by amount: Int64) -> Int64 {
-        queue.sync {
-            let current = value
-            value += amount
-            return current
-        }
-    }
 }
