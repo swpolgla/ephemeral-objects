@@ -10,67 +10,30 @@ struct FileUpload: Content {
 struct FileUploadResponse: Content {
     let id: String
     let downloadURL: String
+    let message: String
 }
 
 
-func register_rest_api_calls(app: Application) {
-
+func register_file_api_calls(app: Application, config: app_config) {
     let files: any RoutesBuilder = app.grouped("files")
-
-    files.get { req in
-        return "MISSING FILE HASH PARAMETER"
-    }
 
     files.get(":hash") { req in
         let hash: String = req.parameters.get("hash")!
-        let file: String = "/tmp/ephemeral/\(hash)"
+        let file_path: FilePath = FilePath(config.object_store_directory).appending(hash)
+        let file: String = file_path.string
         if !FileManager.default.fileExists(atPath: file) {
             return Response(status: .notFound, body: "The requested file hash does not exist.")
         }
-        return try await req.fileio.asyncStreamFile(at: "/tmp/ephemeral/\(hash)")
+        return try await req.fileio.asyncStreamFile(at: file)
     }
 
     files.on(.POST, body: .stream) { req async throws -> Response in
-        let dir: String = "/tmp/ephemeral"
-        let dir_path: FilePath = FilePath(dir)
-        if !FileManager.default.fileExists(atPath: dir) {
-            try await FileSystem.shared.createDirectory(at: dir_path, withIntermediateDirectories: true, permissions: .ownerReadWrite)
-        }
-
-        var sizeExceeded: Bool = false
-        let id: String = req.id
-        let filePath: String = "\(dir)/\(id)"
-
-        defer {
-            if sizeExceeded {
-                try? FileManager.default.removeItem(atPath: filePath)
-            }
-        }
-
-        try await FileSystem.shared.withFileHandle(
-            forWritingAt: FilePath(filePath)
-        ) { fileHandle in
-            var byteCount: Int = 0
-            try await fileHandle.withBufferedWriter(capacity: .mebibytes(4)) { writer in
-                for try await byteBuffer: Request.Body.AsyncIterator.Element in req.body {
-                    byteCount += byteBuffer.readableBytes
-                    if byteCount > 1024 * 1024 * 1024 {
-                        sizeExceeded = true
-                        break
-                    }
-                    try await writer.write(contentsOf: byteBuffer)
-                }
-            }
-        }
-
-        if sizeExceeded {
-            // return Response(status: .payloadTooLarge, body: "Files larger than 1GiB are not accepted.")
-            return try await FileUploadResponse(id: id, downloadURL: "").encodeResponse(status: .payloadTooLarge, for: req)
-        }
-
-        return try await FileUploadResponse(id: id, downloadURL: "/files/\(id)").encodeResponse(status: .created, for: req)
+        return try await save_object(req: req, config: config)
     }
 
+}
+
+func register_page_api_calls(app: Application) {
     app.get { req async throws -> View in
         try await req.view.render(
             "home",
@@ -94,7 +57,7 @@ func register_rest_api_calls(app: Application) {
     }
 
     app.get(.catchall) { req async throws -> Response in
-        let view = try await req.view.render(
+        let view: View = try await req.view.render(
             "not-found",
             PageContext(
                 title: "Page not found",
@@ -102,7 +65,7 @@ func register_rest_api_calls(app: Application) {
                 activePage: ""
             )
         )
-        let response = Response(
+        let response: Response = Response(
             status: .notFound,
             body: .init(buffer: view.data)
         )

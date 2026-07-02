@@ -45,7 +45,7 @@ struct WebsiteRouteTests {
     ) async throws -> TestResponse {
         let app = try await Application.make(.testing)
         configure(app)
-        register_rest_api_calls(app: app)
+        register_file_api_calls(app: app, config: config)
 
         do {
             let eventLoop = app.eventLoopGroup.next()

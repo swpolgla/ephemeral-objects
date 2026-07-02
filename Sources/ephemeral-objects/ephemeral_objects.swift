@@ -3,6 +3,8 @@
 import Vapor
 import Leaf
 
+let config: app_config = read_config_file(path: "config.json")
+
 @main
 struct ephemeral_objects {
     static func main() async throws {
@@ -10,8 +12,10 @@ struct ephemeral_objects {
         let app: Application = try await Application.make(.detect())
 
         do {
+            _ = config
             configure(app)
-            register_rest_api_calls(app: app)
+            register_file_api_calls(app: app, config: config)
+            register_page_api_calls(app: app)
 
             try await app.execute()
             try await app.asyncShutdown()
@@ -23,7 +27,7 @@ struct ephemeral_objects {
 }
 
 func configure(_ app: Application) {
-    let uiDirectory = app.directory.workingDirectory
+    let uiDirectory: String = app.directory.workingDirectory
         + "Sources/ephemeral-objects/mgmt-ui/"
 
     app.directory.viewsDirectory = uiDirectory + "Views/"
