@@ -1,0 +1,199 @@
+name: ephemeral-objects
+
+x-service-security: &service-security
+  restart: unless-stopped
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+services:
+  app:
+    <<: *service-security
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ephemeral-objects:swift-6.3.3
+    user: "10001:10001"
+    read_only: true
+    environment:
+      APP_CONFIG_PATH: /app/config/config.json
+      DATABASE_HOST: postgres
+      DATABASE_PORT: "5432"
+      DATABASE_USER: ${POSTGRES_USER:-ephemeral}
+      DATABASE_NAME: ${POSTGRES_DB:-ephemeral}
+      DATABASE_PASSWORD_FILE: /run/secrets/postgres_password
+      LOG_LEVEL: ${APP_LOG_LEVEL:-info}
+    secrets:
+      - postgres_password
+    volumes:
+      - ./docker/app-config.json:/app/config/config.json:ro
+      - ./runtime/app/objects:/var/lib/ephemeral-objects
+      - ./runtime/app/logs:/var/log/ephemeral-objects
+    tmpfs:
+      - /tmp:mode=1777
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/health"]
+      interval: 86400s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - frontend
+      - backend
+
+  postgres:
+    <<: *service-security
+    image: postgres:18-alpine
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ephemeral}
+      POSTGRES_DB: ${POSTGRES_DB:-ephemeral}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      PGDATA: /var/lib/postgresql/18/docker
+    secrets:
+      - postgres_password
+    volumes:
+      - ./runtime/postgres/data:/var/lib/postgresql
+      - ./runtime/postgres/logs:/var/log/postgresql
+      - ./docker/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    command: ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - backend
+
+  cap:
+    <<: *service-security
+    image: tiago2/cap:latest
+    user: "1000:1000"
+    read_only: true
+    entrypoint:
+      - /bin/sh
+      - -ec
+      - export ADMIN_KEY="$$(cat /run/secrets/cap_admin_key)"; exec bun run ./src/index.js
+    environment:
+      REDIS_URL: redis://valkey:6379
+      REDIS_PREFIX: "cap:"
+      CORS_ORIGIN: ${PUBLIC_ORIGIN:-https://localhost}
+      RATELIMIT_IP_HEADER: x-forwarded-for
+      ENABLE_ASSETS_SERVER: "true"
+    secrets:
+      - cap_admin_key
+    volumes:
+      - ./runtime/cap/data:/usr/src/app/data
+      - ./runtime/cap/logs:/var/log/cap
+    tmpfs:
+      - /tmp:mode=1777
+    depends_on:
+      valkey:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - bun
+        - -e
+        - fetch('http://127.0.0.1:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - frontend
+      - backend
+
+  cap-admin:
+    profiles: ["admin"]
+    image: alpine/socat:1.8.0.3
+    user: "1000:1000"
+    command: ["TCP-LISTEN:3000,fork,reuseaddr", "TCP:cap:3000"]
+    ports:
+      - "127.0.0.1:${CAP_ADMIN_PORT:-3000}:3000"
+    depends_on:
+      cap:
+        condition: service_healthy
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    networks:
+      - frontend
+
+  valkey:
+    <<: *service-security
+    image: valkey/valkey:9-alpine
+    user: "1000:1000"
+    read_only: true
+    volumes:
+      - ./runtime/valkey/data:/data
+      - ./runtime/valkey/logs:/var/log/valkey
+      - ./docker/valkey.conf:/etc/valkey/valkey.conf:ro
+    command: ["valkey-server", "/etc/valkey/valkey.conf"]
+    tmpfs:
+      - /tmp:mode=1777
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - backend
+
+  caddy:
+    <<: *service-security
+    image: caddy:2.11-alpine
+    user: "1000:1000"
+    cap_add:
+      - NET_BIND_SERVICE
+    read_only: true
+    environment:
+      APP_HOST: ${APP_HOST:-localhost}
+    ports:
+      - "${HTTP_PORT:-80}:8080"
+      - "${HTTPS_PORT:-443}:8443"
+      - "${HTTPS_PORT:-443}:8443/udp"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./runtime/caddy/data:/data
+      - ./runtime/caddy/config:/config
+      - ./runtime/caddy/logs:/var/log/caddy
+    tmpfs:
+      - /tmp:mode=1777
+    depends_on:
+      app:
+        condition: service_healthy
+      cap:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "caddy", "validate", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    networks:
+      - frontend
+
+secrets:
+  postgres_password:
+    file: ./runtime/secrets/postgres_password
+  cap_admin_key:
+    file: ./runtime/secrets/cap_admin_key
+
+networks:
+  frontend:
+  backend:
+    internal: true

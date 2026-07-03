@@ -1,0 +1,7 @@
+.build
+.git
+.swiftpm
+.env
+runtime
+Dockerfile*
+compose*.yaml

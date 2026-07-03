@@ -32,6 +32,13 @@ struct WebsiteRouteTests {
         #expect(response.body.contains("This page has already disappeared."))
     }
 
+    @Test("Health endpoint reports readiness")
+    func health() async throws {
+        let response = try await request("/health")
+        #expect(response.status == .ok)
+        #expect(response.body == "ok")
+    }
+
     @Test("File upload endpoint accepts POST requests")
     func fileUploadEndpoint() async throws {
         let response = try await request("/files", method: .POST)
@@ -46,6 +53,7 @@ struct WebsiteRouteTests {
         let app = try await Application.make(.testing)
         configure(app)
         register_file_api_calls(app: app, config: config)
+        register_page_api_calls(app: app)
 
         do {
             let eventLoop = app.eventLoopGroup.next()

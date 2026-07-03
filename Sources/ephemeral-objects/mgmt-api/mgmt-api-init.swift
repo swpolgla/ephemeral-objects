@@ -34,6 +34,10 @@ func register_file_api_calls(app: Application, config: app_config) {
 }
 
 func register_page_api_calls(app: Application) {
+    app.get("health") { _ in
+        Response(status: .ok, body: "ok")
+    }
+
     app.get { req async throws -> View in
         try await req.view.render(
             "home",

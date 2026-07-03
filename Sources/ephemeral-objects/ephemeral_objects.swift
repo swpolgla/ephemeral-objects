@@ -3,7 +3,9 @@
 import Vapor
 import Leaf
 
-let config: app_config = read_config_file(path: "config.json")
+let config: app_config = read_config_file(
+    path: Environment.get("APP_CONFIG_PATH") ?? "config.json"
+)
 
 @main
 struct ephemeral_objects {

@@ -1,0 +1,6 @@
+{
+    "object_store_directory": "/var/lib/ephemeral-objects",
+    "maximum_file_size": 1073741824,
+    "maximum_storage_duration": 1,
+    "maximum_downloads": 2
+}
