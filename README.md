@@ -25,6 +25,13 @@ docker compose --profile admin up -d cap-admin
 The dashboard is then available at `http://127.0.0.1:3000`. PostgreSQL and
 Valkey have no host-published ports.
 
+Create a site key in the Cap dashboard, set its public key as `CAP_SITE_KEY` in
+`.env`, and copy its secret key (not the dashboard admin key) into
+`runtime/secrets/cap_site_secret`. The public challenge endpoint is exposed to
+the browser as `/captcha/<site-key>/`; the application validates its single-use
+tokens against Cap's internal `/siteverify` endpoint before reading an upload
+body.
+
 On Linux, run `sudo ./docker/bootstrap.sh` once if bind-mounted directories
 need their container UID ownership initialized. Docker Desktop handles bind
 mount ownership differently and normally does not require this step.

@@ -30,6 +30,10 @@ generate_secret() {
 chmod 700 "$runtime_dir/secrets"
 generate_secret "$runtime_dir/secrets/postgres_password"
 generate_secret "$runtime_dir/secrets/cap_admin_key"
+if [ ! -e "$runtime_dir/secrets/cap_site_secret" ]; then
+    : > "$runtime_dir/secrets/cap_site_secret"
+fi
+chmod 600 "$runtime_dir/secrets/cap_site_secret"
 
 if [ "$(uname -s)" = "Linux" ] && [ "$(id -u)" -eq 0 ]; then
     chown -R 10001:10001 "$runtime_dir/app"
@@ -38,6 +42,9 @@ if [ "$(uname -s)" = "Linux" ] && [ "$(id -u)" -eq 0 ]; then
 fi
 
 printf '%s\n' "Runtime directories and secrets are ready in $runtime_dir"
+if [ ! -s "$runtime_dir/secrets/cap_site_secret" ]; then
+    printf '%s\n' "Add the Cap site secret to runtime/secrets/cap_site_secret before starting the app."
+fi
 if [ "$(uname -s)" = "Linux" ] && [ "$(id -u)" -ne 0 ]; then
     printf '%s\n' "Run this script as root if containers report bind-mount permission errors."
 fi

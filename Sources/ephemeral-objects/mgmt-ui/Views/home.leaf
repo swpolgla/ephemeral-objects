@@ -36,6 +36,22 @@
                         </div>
                     </div>
 
+                    <div class="captcha-challenge" data-state="captcha" hidden>
+                        <div class="file-badge" aria-hidden="true">FILE</div>
+                        <div class="captcha-details">
+                            <p class="eyebrow">One quick check</p>
+                            <strong data-captcha-file-name></strong>
+                            <span data-captcha-file-size></span>
+                            <cap-widget
+                                data-captcha-widget
+                                data-cap-api-endpoint="#(captchaEndpoint)"
+                                data-cap-i18n-initial-state="Verify to upload"
+                                data-cap-i18n-solved-label="Verified"
+                            ></cap-widget>
+                            <button class="text-button" type="button" data-reset>Choose a different file</button>
+                        </div>
+                    </div>
+
                     <div class="upload-complete" data-state="complete" hidden>
                         <div class="success-mark" aria-hidden="true">✓</div>
                         <p class="eyebrow">Your link is ready</p>
@@ -59,7 +75,7 @@
                 </div>
                 <div class="upload-caption">
                     <span><span class="status-dot"></span>Connected to /files</span>
-                    <span>Uploads use a multipart POST request</span>
+                    <span>Uploads protected by Cap</span>
                 </div>
             </div>
         </section>

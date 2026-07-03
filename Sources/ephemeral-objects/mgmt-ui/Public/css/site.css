@@ -90,6 +90,20 @@ em { color: var(--accent); font-family: var(--serif); font-weight: 500; }
 .upload-caption { display: flex; justify-content: space-between; margin-top: 24px; color: var(--muted); font: 10px var(--mono); text-transform: uppercase; letter-spacing: .04em; }
 .status-dot { display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: #58a770; box-shadow: 0 0 0 4px rgba(88,167,112,.13); }
 .upload-progress { width: 100%; display: grid; grid-template-columns: 64px 1fr; gap: 20px; align-items: center; padding: 28px; }
+.captcha-challenge { width: 100%; display: grid; grid-template-columns: 64px 1fr; gap: 20px; align-items: start; padding: 28px; }
+.captcha-details { min-width: 0; }
+.captcha-details .eyebrow { margin-bottom: 8px; }
+.captcha-details > strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; }
+.captcha-details > span { display: block; margin-bottom: 22px; color: var(--muted); font-size: 12px; }
+.captcha-details cap-widget {
+    display: block;
+    margin-bottom: 18px;
+    --cap-background: #f6f4ef;
+    --cap-border-color: #d9d5cd;
+    --cap-border-radius: 9px;
+    --cap-color: #18171b;
+    --cap-font: var(--sans);
+}
 .file-badge { display: grid; place-items: center; width: 64px; height: 76px; color: white; background: var(--accent); border-radius: 8px 18px 8px 8px; font: 10px var(--mono); }
 .file-details { min-width: 0; }
 .file-details strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 17px; }

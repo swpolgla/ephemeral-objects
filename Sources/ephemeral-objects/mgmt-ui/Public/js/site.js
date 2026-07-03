@@ -15,10 +15,14 @@
     const fileSize = uploader.querySelector("[data-file-size]");
     const progressBar = uploader.querySelector("[data-progress-bar]");
     const progressLabel = uploader.querySelector("[data-progress-label]");
+    const captchaFileName = uploader.querySelector("[data-captcha-file-name]");
+    const captchaFileSize = uploader.querySelector("[data-captcha-file-size]");
+    let captchaWidget = uploader.querySelector("[data-captcha-widget]");
     const shareLink = uploader.querySelector("[data-share-link]");
     const copyButton = uploader.querySelector("[data-copy-link]");
     const resetButtons = [...uploader.querySelectorAll("[data-reset]")];
     let activeRequest;
+    let pendingFile;
 
     const showState = (name) => {
         states.forEach((state) => {
@@ -67,16 +71,33 @@
         return null;
     };
 
-    const uploadFile = (file) => {
+    const resetCaptcha = () => {
+        if (!captchaWidget) return;
+        if (typeof captchaWidget.reset === "function") {
+            captchaWidget.reset();
+            return;
+        }
+
+        const replacement = captchaWidget.cloneNode(true);
+        captchaWidget.replaceWith(replacement);
+        captchaWidget = replacement;
+        bindCaptchaEvents();
+    };
+
+    const resetUploader = ({ focus = true } = {}) => {
+        if (activeRequest) activeRequest.abort();
+        pendingFile = null;
+        input.value = "";
+        shareLink.value = "";
+        copyButton.textContent = "Copy link";
         status.textContent = "";
-        if (!file || file.size === 0) {
-            status.textContent = "Choose a file with some content to continue.";
-            return;
-        }
-        if (file.size > 1024 * 1024 * 1024) {
-            status.textContent = "That file is larger than the 1 GB prototype limit.";
-            return;
-        }
+        resetCaptcha();
+        showState("idle");
+        if (focus) input.focus();
+    };
+
+    const uploadFile = (file, captchaToken) => {
+        status.textContent = "";
 
         fileName.textContent = file.name;
         fileSize.textContent = formatSize(file.size);
@@ -91,6 +112,7 @@
         activeRequest.setRequestHeader("Content-Type", file.type || "application/octet-stream");
         activeRequest.setRequestHeader("X-File-Name", encodeURIComponent(file.name));
         activeRequest.setRequestHeader("X-File-Size", String(file.size));
+        activeRequest.setRequestHeader("X-Captcha-Token", captchaToken);
 
         activeRequest.upload.addEventListener("progress", (event) => {
             if (!event.lengthComputable) return;
@@ -106,18 +128,37 @@
                 if (!downloadURL) {
                     showState("accepted");
                     status.textContent = "Upload accepted, but the server did not return a download link.";
-                    resetButtons[1].focus();
+                    uploader.querySelector('[data-state="accepted"] [data-reset]').focus();
                     activeRequest = null;
+                    pendingFile = null;
+                    resetCaptcha();
                     return;
                 }
 
                 shareLink.value = downloadURL;
+                pendingFile = null;
+                resetCaptcha();
                 showState("complete");
                 status.textContent = "Upload complete. Download link ready.";
                 copyButton.focus();
             } else {
+                const responseMessage = (() => {
+                    try {
+                        return JSON.parse(activeRequest.responseText).message;
+                    } catch {
+                        return "";
+                    }
+                })();
+                pendingFile = null;
+                resetCaptcha();
                 showState("idle");
-                status.textContent = `Upload failed with status ${activeRequest.status}. Please try again.`;
+                if (activeRequest.status === 400 || activeRequest.status === 403) {
+                    status.textContent = responseMessage || "The CAPTCHA expired or was rejected. Please try again.";
+                } else if (activeRequest.status === 503) {
+                    status.textContent = responseMessage || "CAPTCHA verification is temporarily unavailable. Please try again.";
+                } else {
+                    status.textContent = `Upload failed with status ${activeRequest.status}. Please try again.`;
+                }
             }
             activeRequest = null;
         });
@@ -126,18 +167,52 @@
             showState("idle");
             status.textContent = "The upload could not reach the server. Please try again.";
             activeRequest = null;
+            pendingFile = null;
+            resetCaptcha();
         });
 
         activeRequest.addEventListener("abort", () => {
             showState("idle");
             status.textContent = "Upload cancelled.";
             activeRequest = null;
+            pendingFile = null;
+            resetCaptcha();
         });
 
         activeRequest.send(file);
     };
 
-    input.addEventListener("change", () => uploadFile(input.files[0]));
+    const selectFile = (file) => {
+        status.textContent = "";
+        if (!file || file.size === 0) {
+            status.textContent = "Choose a file with some content to continue.";
+            return;
+        }
+        if (file.size > 1024 * 1024 * 1024) {
+            status.textContent = "That file is larger than the 1 GB prototype limit.";
+            return;
+        }
+
+        pendingFile = file;
+        captchaFileName.textContent = file.name;
+        captchaFileSize.textContent = formatSize(file.size);
+        showState("captcha");
+        status.textContent = `Verify to upload ${file.name}.`;
+    };
+
+    function bindCaptchaEvents() {
+        captchaWidget.addEventListener("solve", (event) => {
+            if (!pendingFile || !event.detail?.token) return;
+            uploadFile(pendingFile, event.detail.token);
+        });
+        captchaWidget.addEventListener("error", () => {
+            status.textContent = "The CAPTCHA challenge could not be completed. Please try again.";
+        });
+    }
+
+    bindCaptchaEvents();
+
+    input.addEventListener("change", () => selectFile(input.files[0]));
 
     ["dragenter", "dragover"].forEach((eventName) => {
         dropZone.addEventListener(eventName, (event) => {
@@ -153,7 +228,7 @@
         });
     });
 
-    dropZone.addEventListener("drop", (event) => uploadFile(event.dataTransfer.files[0]));
+    dropZone.addEventListener("drop", (event) => selectFile(event.dataTransfer.files[0]));
 
     copyButton.addEventListener("click", async () => {
         try {
@@ -168,14 +243,6 @@
     });
 
     resetButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-            if (activeRequest) activeRequest.abort();
-            input.value = "";
-            shareLink.value = "";
-            copyButton.textContent = "Copy link";
-            status.textContent = "";
-            showState("idle");
-            input.focus();
-        });
+        button.addEventListener("click", () => resetUploader());
     });
 })();

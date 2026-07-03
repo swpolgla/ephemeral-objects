@@ -8,7 +8,9 @@
     <title>#(title) · Ephemeral</title>
     <link rel="icon" href="/assets/mark.svg?v=2" type="image/svg+xml">
     <link rel="stylesheet" href="/css/site.css?v=2">
-    <script src="/js/site.js?v=2" defer></script>
+    <script>window.CAP_CUSTOM_WASM_URL = "/captcha/assets/cap_wasm_bg.wasm";</script>
+    <script src="/captcha/assets/widget.js" defer></script>
+    <script src="/js/site.js?v=3" defer></script>
 </head>
 <body data-page="#(activePage)">
     <a class="skip-link" href="#main-content">Skip to content</a>
