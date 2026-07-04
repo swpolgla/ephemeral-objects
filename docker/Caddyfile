@@ -21,7 +21,14 @@
 
 	@cap_private path /captcha /captcha/*
 	handle @cap_private {
-		respond 404
+		rewrite * /404
+		reverse_proxy app:8080
+	}
+
+	@internal_health_check path /health
+	handle @internal_health_check {
+		rewrite * /404
+		reverse_proxy app:8080
 	}
 
 	handle {
