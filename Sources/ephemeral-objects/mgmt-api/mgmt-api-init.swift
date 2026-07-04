@@ -1,4 +1,5 @@
 import Foundation
+import Fluent
 import NIOCore
 import NIOFileSystem
 import Vapor
@@ -23,15 +24,14 @@ func register_file_api_calls(
     captchaVerifier: any CaptchaVerifying
 ) {
     let files: any RoutesBuilder = app.grouped("files")
+    let uploadLimiter = UploadLimiter(limit: config.maximum_concurrent_uploads)
 
-    files.get(":hash") { req in
-        let hash: String = req.parameters.get("hash")!
-        let file_path: FilePath = FilePath(config.object_store_directory).appending(hash)
-        let file: String = file_path.string
-        if !FileManager.default.fileExists(atPath: file) {
-            return Response(status: .notFound, body: "The requested file hash does not exist.")
-        }
-        return try await req.fileio.asyncStreamFile(at: file)
+    files.get(":id") { req in
+        try await download_object(req: req, config: config)
+    }
+
+    files.on(.HEAD, ":id") { _ in
+        Response(status: .methodNotAllowed)
     }
 
     files.on(.POST, body: .stream) { req async throws -> Response in
@@ -60,14 +60,15 @@ func register_file_api_calls(
                 .encodeResponse(status: .forbidden, for: req)
         }
 
-        return try await save_object(req: req, config: config)
+        return try await save_object(req: req, config: config, limiter: uploadLimiter)
     }
 
 }
 
 func register_page_api_calls(app: Application, capConfig: CapConfiguration) {
-    app.get("health") { _ in
-        Response(status: .ok, body: "ok")
+    app.get("health") { req async throws in
+        _ = try await FileObject.query(on: req.db).limit(1).all()
+        return Response(status: .ok, body: "ok")
     }
 
     app.get { req async throws -> View in

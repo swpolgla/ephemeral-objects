@@ -6,6 +6,23 @@ struct app_config: Codable, Sendable {
     let maximum_file_size: Int64 // Bytes
     let maximum_storage_duration: Int // Days
     let maximum_downloads: Int
+    let maximum_upload_time: Int // Seconds
+    let maximum_concurrent_uploads: Int
+
+    func validate() throws {
+        guard !object_store_directory.isEmpty,
+              maximum_file_size > 0,
+              maximum_storage_duration > 0,
+              maximum_downloads > 0,
+              maximum_upload_time > 0,
+              maximum_concurrent_uploads > 0 else {
+            throw ConfigurationError.invalidValue
+        }
+    }
+}
+
+enum ConfigurationError: Error {
+    case invalidValue
 }
 
 struct CapConfiguration: Sendable {
@@ -19,7 +36,9 @@ func read_config_file(path: String) -> app_config {
     do {
         let configURL: URL = URL(fileURLWithPath: path)
         let configData: Data = try Data(contentsOf: configURL)
-        return try JSONDecoder().decode(app_config.self, from: configData)
+        let config = try JSONDecoder().decode(app_config.self, from: configData)
+        try config.validate()
+        return config
     } catch {
         fatalError("Unable to read config file at '\(path)': \(error)")
     }

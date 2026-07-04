@@ -11,6 +11,10 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/vapor/vapor.git", from: "4.121.4"),
         .package(url: "https://github.com/vapor/leaf.git", from: "4.5.2"),
+        .package(url: "https://github.com/vapor/fluent.git", from: "4.13.0"),
+        .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.12.0"),
+        .package(url: "https://github.com/vapor/sql-kit.git", from: "3.36.0"),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "4.5.0"),
         .package(url: "https://github.com/apple/swift-testing.git", from: "0.6.0"),
     ],
     targets: [
@@ -20,7 +24,11 @@ let package = Package(
             name: "ephemeral-objects",
             dependencies: [
                 .product(name: "Vapor", package: "vapor"),
-                .product(name: "Leaf", package: "leaf")
+                .product(name: "Leaf", package: "leaf"),
+                .product(name: "Fluent", package: "fluent"),
+                .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
+                .product(name: "SQLKit", package: "sql-kit"),
+                .product(name: "Crypto", package: "swift-crypto")
             ],
             exclude: ["mgmt-ui"],
         ),

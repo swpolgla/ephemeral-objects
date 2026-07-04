@@ -30,7 +30,7 @@ services:
       - postgres_password
       - cap_site_secret
     volumes:
-      - ./docker/app-config.json:/app/config/config.json:ro
+      - ./config.json:/app/config/config.json:ro
       - ./runtime/app/objects:/var/lib/ephemeral-objects
       - ./runtime/app/logs:/var/log/ephemeral-objects
     tmpfs:

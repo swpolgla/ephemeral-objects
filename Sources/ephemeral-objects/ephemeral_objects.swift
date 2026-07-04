@@ -2,6 +2,7 @@
 // https://docs.swift.org/swift-book
 import Vapor
 import Leaf
+import Fluent
 
 let config: app_config = read_config_file(
     path: Environment.get("APP_CONFIG_PATH") ?? "config.json"
@@ -15,8 +16,10 @@ struct ephemeral_objects {
         let app: Application = try await Application.make(.detect())
 
         do {
-            _ = config
             configure(app)
+            try configure_database(app)
+            try await app.autoMigrate()
+            app.lifecycle.use(ObjectSweeperLifecycle(config: config))
             register_file_api_calls(
                 app: app,
                 config: config,

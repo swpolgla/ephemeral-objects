@@ -39,3 +39,26 @@ mount ownership differently and normally does not require this step.
 PostgreSQL and Caddy write native logs beneath `runtime/`. Valkey writes to
 `runtime/valkey/logs`; Vapor and Cap use stdout/stderr and remain available
 through `docker compose logs`.
+
+## Object retention
+
+PostgreSQL is the source of truth for stored objects. Each successful upload
+records its server-generated UUID, sanitized original filename, optional file
+extension, media type, actual byte size, SHA-256 digest, upload time, lifecycle
+state, and remaining download count. Files on disk are named only by the
+server-generated UUID.
+
+The limits in the untracked root `config.json` control object behavior. Start
+from `config.example.json` when setting up a new checkout.
+
+- `maximum_file_size` is the maximum streamed size in bytes.
+- `maximum_storage_duration` is the retention period in days. Changes apply to
+  existing objects during the next sweep.
+- `maximum_downloads` is the initial download allowance.
+- `maximum_upload_time` is the wall-clock upload timeout in seconds.
+- `maximum_concurrent_uploads` bounds simultaneous upload streams.
+
+Downloads are attachments and consume their allowance when streaming begins.
+Range requests are not supported. The final download schedules immediate
+deletion. A database-coordinated reconciliation pass also runs at startup and
+once per hour to remove expired, exhausted, incomplete, and orphaned objects.

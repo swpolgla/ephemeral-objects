@@ -1,6 +1,8 @@
 {
-    "object_store_directory": "/tmp/objstore",
+    "object_store_directory": "/var/lib/ephemeral-objects",
     "maximum_file_size": 1073741824,
     "maximum_storage_duration": 1,
-    "maximum_downloads": 2
+    "maximum_downloads": 2,
+    "maximum_upload_time": 3600,
+    "maximum_concurrent_uploads": 16
 }
