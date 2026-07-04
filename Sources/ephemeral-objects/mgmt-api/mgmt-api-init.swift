@@ -65,7 +65,11 @@ func register_file_api_calls(
 
 }
 
-func register_page_api_calls(app: Application, capConfig: CapConfiguration) {
+func register_page_api_calls(
+    app: Application,
+    config: app_config,
+    capConfig: CapConfiguration
+) {
     app.get("health") { req async throws in
         _ = try await FileObject.query(on: req.db).limit(1).all()
         return Response(status: .ok, body: "ok")
@@ -75,10 +79,14 @@ func register_page_api_calls(app: Application, capConfig: CapConfiguration) {
         try await req.view.render(
             "home",
             HomePageContext(
-                title: "Private file sharing, made temporary",
-                description: "Share files simply with private links designed to disappear.",
+                title: "Share a file",
+                description: "Upload a file and receive a temporary download link.",
                 activePage: "home",
-                captchaEndpoint: capConfig.publicEndpoint
+                captchaEndpoint: capConfig.publicEndpoint,
+                maximumFileSize: config.maximum_file_size,
+                maximumFileSizeLabel: binaryByteCountLabel(config.maximum_file_size),
+                storageDurationLabel: unitLabel(config.maximum_storage_duration, singular: "day"),
+                downloadLimitLabel: unitLabel(config.maximum_downloads, singular: "download")
             )
         )
     }
@@ -86,10 +94,13 @@ func register_page_api_calls(app: Application, capConfig: CapConfiguration) {
     app.get("about") { req async throws -> View in
         try await req.view.render(
             "about",
-            PageContext(
-                title: "About Ephemeral",
-                description: "A calmer, privacy-minded way to share files without keeping them forever.",
-                activePage: "about"
+            ServiceInfoPageContext(
+                title: "Service information",
+                description: "File limits, retention, downloads, and security information for Ephemeral.",
+                activePage: "about",
+                maximumFileSizeLabel: binaryByteCountLabel(config.maximum_file_size),
+                storageDurationLabel: unitLabel(config.maximum_storage_duration, singular: "day"),
+                downloadLimitLabel: unitLabel(config.maximum_downloads, singular: "download")
             )
         )
     }
@@ -123,4 +134,39 @@ struct HomePageContext: Encodable {
     let description: String
     let activePage: String
     let captchaEndpoint: String
+    let maximumFileSize: Int64
+    let maximumFileSizeLabel: String
+    let storageDurationLabel: String
+    let downloadLimitLabel: String
+}
+
+struct ServiceInfoPageContext: Encodable {
+    let title: String
+    let description: String
+    let activePage: String
+    let maximumFileSizeLabel: String
+    let storageDurationLabel: String
+    let downloadLimitLabel: String
+}
+
+private func unitLabel(_ value: Int, singular: String) -> String {
+    "\(value) \(value == 1 ? singular : "\(singular)s")"
+}
+
+private func binaryByteCountLabel(_ bytes: Int64) -> String {
+    let units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]
+    var value = Double(bytes)
+    var unitIndex = 0
+
+    while value >= 1024, unitIndex < units.count - 1 {
+        value /= 1024
+        unitIndex += 1
+    }
+
+    let formattedValue = value.rounded() == value
+        ? String(format: "%.0f", value)
+        : String(format: "%.2f", value)
+            .replacingOccurrences(of: #"\.?0+$"#, with: "", options: .regularExpression)
+
+    return "\(formattedValue) \(units[unitIndex])"
 }

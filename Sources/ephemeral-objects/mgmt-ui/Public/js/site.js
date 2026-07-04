@@ -7,6 +7,7 @@
     const uploader = document.querySelector("[data-uploader]");
     if (!uploader) return;
 
+    const maximumFileSize = Number(uploader.dataset.maximumFileSize);
     const input = uploader.querySelector("[data-file-input]");
     const dropZone = uploader.querySelector("[data-drop-zone]");
     const status = uploader.querySelector("[data-status]");
@@ -188,8 +189,8 @@
             status.textContent = "Choose a file with some content to continue.";
             return;
         }
-        if (file.size > 1024 * 1024 * 1024) {
-            status.textContent = "That file is larger than the 1 GB prototype limit.";
+        if (Number.isFinite(maximumFileSize) && file.size > maximumFileSize) {
+            status.textContent = "That file is larger than this service allows.";
             return;
         }
 

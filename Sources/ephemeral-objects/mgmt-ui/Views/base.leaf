@@ -7,10 +7,10 @@
     <meta name="theme-color" content="#f6f4ef">
     <title>#(title) · Ephemeral</title>
     <link rel="icon" href="/assets/mark.svg?v=2" type="image/svg+xml">
-    <link rel="stylesheet" href="/css/site.css?v=2">
+    <link rel="stylesheet" href="/css/site.css?v=3">
     <script>window.CAP_CUSTOM_WASM_URL = "/captcha/assets/cap_wasm_bg.wasm";</script>
     <script src="/captcha/assets/widget.js" defer></script>
-    <script src="/js/site.js?v=3" defer></script>
+    <script src="/js/site.js?v=4" defer></script>
 </head>
 <body data-page="#(activePage)">
     <a class="skip-link" href="#main-content">Skip to content</a>
@@ -21,9 +21,7 @@
                 <span>Ephemeral</span>
             </a>
             <nav class="site-nav" aria-label="Primary navigation">
-                <a href="/" data-nav="home">Share</a>
-                <a href="/about" data-nav="about">About</a>
-                <a class="nav-cta" href="/#upload">Send a file</a>
+                <a href="/about" data-nav="about">Service information</a>
             </nav>
         </header>
 
@@ -32,17 +30,8 @@
         </main>
 
         <footer class="site-footer">
-            <div>
-                <a class="brand brand--small" href="/">
-                    <img src="/assets/mark.svg?v=2" alt="" width="26" height="26">
-                    <span>Ephemeral</span>
-                </a>
-                <p>Share what matters. Keep nothing forever.</p>
-            </div>
-            <div class="footer-meta">
-                <a href="/about">How it works</a>
-                <span>Built with care and Swift.</span>
-            </div>
+            <span>Temporary file sharing without accounts.</span>
+            <span><a href="https://github.com/swpolgla/ephemeral-objects">swpolgla/ephemeral-objects</a> · Built with Swift</span>
         </footer>
     </div>
 </body>

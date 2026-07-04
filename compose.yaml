@@ -40,7 +40,7 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:8080/health"]
-      interval: 86400s
+      interval: 20s
       timeout: 3s
       retries: 5
       start_period: 10s

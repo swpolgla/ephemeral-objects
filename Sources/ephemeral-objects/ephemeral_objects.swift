@@ -25,7 +25,7 @@ struct ephemeral_objects {
                 config: config,
                 captchaVerifier: CapCaptchaVerifier(config: capConfig)
             )
-            register_page_api_calls(app: app, capConfig: capConfig)
+            register_page_api_calls(app: app, config: config, capConfig: capConfig)
 
             try await app.execute()
             try await app.asyncShutdown()

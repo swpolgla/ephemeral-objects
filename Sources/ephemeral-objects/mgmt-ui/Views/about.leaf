@@ -1,47 +1,51 @@
 #extend("base"):
     #export("content"):
-        <section class="page-hero">
-            <p class="eyebrow"><span></span> About Ephemeral</p>
-            <h1>The internet remembers enough already.</h1>
-            <p>Ephemeral is a work in progress toward file sharing that is simple when you need it and absent when you do not.</p>
-        </section>
+        <article class="information-page">
+            <header class="page-heading">
+                <p class="state-label">Ephemeral</p>
+                <h1>Service information</h1>
+                <p>Ephemeral lets you upload a file and share it through a temporary download link. No account is required. Files are automatically removed after they expire or reach their download limit.</p>
+            </header>
 
-        <section class="manifesto section">
-            <div class="manifesto-index">01 — The idea</div>
-            <div class="manifesto-copy">
-                <h2>Useful now.<br><em>Gone later.</em></h2>
-                <p>Most file-sharing products begin with storage. Ephemeral begins with a moment: a document for a coworker, photos for family, or a large file that simply needs to get from here to there.</p>
-                <p>We are designing the service so that the link is the whole experience—without an account, a library to manage, or files lingering without purpose.</p>
-            </div>
-        </section>
+            <dl class="service-facts">
+                <div>
+                    <dt>Maximum file size</dt>
+                    <dd>#(maximumFileSizeLabel)</dd>
+                </div>
+                <div>
+                    <dt>Available for</dt>
+                    <dd>Up to #(storageDurationLabel)</dd>
+                </div>
+                <div>
+                    <dt>Download limit</dt>
+                    <dd>#(downloadLimitLabel)</dd>
+                </div>
+            </dl>
 
-        <section class="values-grid section">
-            <article class="value-card value-card--accent">
-                <span>Privacy</span>
-                <h3>Designed so the contents belong to the people sharing them.</h3>
-                <p>End-to-end encryption is part of the product vision. Its precise implementation will be documented before the service handles real files.</p>
-            </article>
-            <article class="value-card">
-                <span>Impermanence</span>
-                <h3>Retention should be a deliberate choice, not a default.</h3>
-                <p>Automatic expiry is planned as a core behavior, giving each file a clear and finite lifecycle.</p>
-            </article>
-            <article class="value-card">
-                <span>Simplicity</span>
-                <h3>Sharing a file should take seconds, not a new relationship with an app.</h3>
-                <p>No account ceremony. No crowded dashboard. Just a file and a link for the person who needs it.</p>
-            </article>
-        </section>
+            <section class="information-section">
+                <h2>What happens to your file</h2>
+                <p>After uploading a file, you receive a link that you can share with others. Each completed download uses one of the link’s available downloads.</p>
+                <p>The file is deleted after its final allowed download or when its retention period ends, whichever happens first. Incomplete and expired uploads are also removed automatically.</p>
+            </section>
 
-        <section class="status-panel section">
-            <div>
-                <p class="eyebrow">Where things stand</p>
-                <h2>An honest early look.</h2>
-            </div>
-            <div>
-                <p>The upload interface now submits files to the service’s <code>POST /files</code> endpoint. That endpoint is still a development placeholder and does not yet persist files or return download links; the security and expiry systems described here remain the direction—not yet a production promise.</p>
-                <a class="button button--dark" href="/#upload">Try the prototype <span>→</span></a>
-            </div>
-        </section>
+            <section class="information-section">
+                <h2>What the service stores</h2>
+                <p>Ephemeral stores your file and the information needed to deliver it, including its filename, type, size, upload time, and remaining download count.</p>
+                <p>The service does not require an account or create a personal file library.</p>
+            </section>
+
+            <section class="information-section">
+                <h2>Keeping your link secure</h2>
+                <p>Uploads require a verification check to reduce automated abuse. Anyone with the download link can access the file while it remains available, so share the link only with its intended recipients.</p>
+                <p>Files are not end-to-end encrypted. The service operator can technically access stored files, and HTTPS protects files while they travel between your browser and the service.</p>
+            </section>
+
+            <section class="information-section">
+                <h2>Limitations</h2>
+                <p>Only one file can be uploaded at a time. Downloads cannot be paused or resumed, and an interrupted download may still use one of the link’s available downloads.</p>
+            </section>
+
+            <a class="button button--dark" href="/">Share a file</a>
+        </article>
     #endexport
 #endextend

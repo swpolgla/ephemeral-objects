@@ -1,17 +1,12 @@
 #extend("base"):
     #export("content"):
         <section class="not-found">
-            <div class="error-art" aria-hidden="true">
-                <span>4</span>
-                <div class="error-zero"><img src="/assets/mark-light.svg?v=2" alt=""></div>
-                <span>4</span>
-            </div>
-            <p class="eyebrow">Well, that was fleeting.</p>
-            <h1>This page has already disappeared.</h1>
-            <p>The address may be mistyped, the page may have moved, or perhaps it was never meant to last.</p>
+            <p class="error-code">404</p>
+            <h1>Page not found</h1>
+            <p>The address may be incorrect, or the resource may no longer be available.</p>
             <div class="button-row">
-                <a class="button button--dark" href="/">Back home <span>→</span></a>
-                <a class="text-link" href="/about">Learn about Ephemeral</a>
+                <a class="button button--dark" href="/">Share a file</a>
+                <a class="text-link" href="/about">Service information</a>
             </div>
         </section>
     #endexport
