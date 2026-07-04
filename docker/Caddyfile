@@ -13,10 +13,15 @@
 		}
 	}
 
-	redir /captcha /captcha/ 308
-
-	handle_path /captcha/* {
+	@cap_public path /captcha/assets/* /captcha/{$CAP_SITE_KEY}/*
+	handle @cap_public {
+		uri strip_prefix /captcha
 		reverse_proxy cap:3000
+	}
+
+	@cap_private path /captcha /captcha/*
+	handle @cap_private {
+		respond 404
 	}
 
 	handle {
