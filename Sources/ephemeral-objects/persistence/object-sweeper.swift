@@ -4,8 +4,8 @@ import NIOFileSystem
 import SQLKit
 import Vapor
 
-private let cleanupBatchSize = 500
-private let maximumCleanupBatches = 10
+private let cleanupBatchSize: Int = 500
+private let maximumCleanupBatches: Int = 10
 private let staleUploadAge: TimeInterval = 3_600
 private let uploadCleanupGrace: TimeInterval = 300
 private let cleanupLockID: Int64 = 7_270_061_337
@@ -67,7 +67,7 @@ struct ObjectSweeperLifecycle: LifecycleHandler {
 private func run_sweep(application: Application, config: app_config) async {
     do {
         try await application.db.transaction { database in
-            guard let sql = database as? any SQLDatabase else { return }
+            guard let sql: any SQLDatabase = database as? any SQLDatabase else { return }
             let lock = try await sql.raw(
                 "SELECT pg_try_advisory_xact_lock(\(bind: cleanupLockID)) AS acquired"
             ).first(decoding: AdvisoryLockResult.self)
@@ -136,7 +136,7 @@ private func clean_database_objects(
         }
     }
 
-    var cursor = ""
+    var cursor: String = ""
     for _ in 0..<maximumCleanupBatches {
         let rows = try await sql.raw(
             """
@@ -167,7 +167,7 @@ private func clean_orphaned_files(
     maximumUploadTime: Int,
     logger: Logger
 ) async throws {
-    guard let entries = try? FileManager.default.contentsOfDirectory(
+    guard let entries: [URL] = try? FileManager.default.contentsOfDirectory(
         at: URL(fileURLWithPath: directory),
         includingPropertiesForKeys: [
             .isRegularFileKey,
@@ -181,7 +181,7 @@ private func clean_orphaned_files(
 
     let staleTemporaryFileAge =
         TimeInterval(maximumUploadTime) + uploadCleanupGrace
-    var examined = 0
+    var examined: Int = 0
     for entry in entries where examined < cleanupBatchSize * maximumCleanupBatches {
         examined += 1
         let name = entry.lastPathComponent
@@ -199,7 +199,7 @@ private func clean_orphaned_files(
         guard values?.isRegularFile == true else { continue }
 
         if name.hasSuffix(".uploading") {
-            guard let modified = values?.contentModificationDate,
+            guard let modified: Date = values?.contentModificationDate,
                   modified < Date().addingTimeInterval(-staleTemporaryFileAge) else {
                 continue
             }
@@ -211,7 +211,7 @@ private func clean_orphaned_files(
             continue
         }
 
-        guard let uuid = UUID(uuidString: name),
+        guard let uuid: UUID = UUID(uuidString: name),
               uuid.uuidString.lowercased() == name else {
             do {
                 try FileManager.default.removeItem(at: entry)
@@ -243,9 +243,9 @@ private func remove_if_present(_ path: String) throws {
 }
 
 private func regular_file_size_for_sweep(at path: String) -> Int64? {
-    guard let attributes = try? FileManager.default.attributesOfItem(atPath: path),
+    guard let attributes: [FileAttributeKey: Any] = try? FileManager.default.attributesOfItem(atPath: path),
           attributes[.type] as? FileAttributeType == .typeRegular,
-          let size = attributes[.size] as? NSNumber else {
+          let size: NSNumber = attributes[.size] as? NSNumber else {
         return nil
     }
     return size.int64Value

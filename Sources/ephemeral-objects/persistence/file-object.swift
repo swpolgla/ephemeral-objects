@@ -8,7 +8,7 @@ enum FileObjectState: String, Codable, Sendable {
 }
 
 final class FileObject: Model, @unchecked Sendable {
-    static let schema = "file_objects"
+    static let schema: String = "file_objects"
 
     @ID(custom: "id", generatedBy: .user)
     var id: String?

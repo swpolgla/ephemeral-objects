@@ -9,7 +9,7 @@ func configure_database(_ app: Application) throws {
     let username = Environment.get("DATABASE_USER") ?? "ephemeral"
     let database = Environment.get("DATABASE_NAME") ?? "ephemeral"
 
-    guard let passwordFile = Environment.get("DATABASE_PASSWORD_FILE"),
+    guard let passwordFile: String = Environment.get("DATABASE_PASSWORD_FILE"),
           !passwordFile.isEmpty else {
         throw DatabaseConfigurationError.missingPasswordFile
     }

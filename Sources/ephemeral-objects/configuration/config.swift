@@ -45,12 +45,12 @@ func read_config_file(path: String) -> app_config {
 }
 
 func read_cap_configuration() -> CapConfiguration {
-    guard let siteKey = Environment.get("CAP_SITE_KEY")?.trimmingCharacters(in: .whitespacesAndNewlines),
+    guard let siteKey: String = Environment.get("CAP_SITE_KEY")?.trimmingCharacters(in: .whitespacesAndNewlines),
           !siteKey.isEmpty else {
         fatalError("CAP_SITE_KEY must contain the Cap site key.")
     }
 
-    guard let secretFile = Environment.get("CAP_SECRET_FILE"), !secretFile.isEmpty else {
+    guard let secretFile: String = Environment.get("CAP_SECRET_FILE"), !secretFile.isEmpty else {
         fatalError("CAP_SECRET_FILE must point to the Cap site secret.")
     }
 

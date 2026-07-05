@@ -35,7 +35,7 @@ func register_file_api_calls(
     }
 
     files.on(.POST, body: .stream) { req async throws -> Response in
-        guard let token = req.headers["X-Captcha-Token"].first?
+        guard let token: String = req.headers["X-Captcha-Token"].first?
             .trimmingCharacters(in: .whitespacesAndNewlines),
               !token.isEmpty else {
             return try await CaptchaErrorResponse(message: "A CAPTCHA token is required.")
@@ -154,9 +154,9 @@ private func unitLabel(_ value: Int, singular: String) -> String {
 }
 
 private func binaryByteCountLabel(_ bytes: Int64) -> String {
-    let units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]
+    let units: [String] = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]
     var value = Double(bytes)
-    var unitIndex = 0
+    var unitIndex: Int = 0
 
     while value >= 1024, unitIndex < units.count - 1 {
         value /= 1024

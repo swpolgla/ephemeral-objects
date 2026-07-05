@@ -57,9 +57,9 @@ func save_object(
 }
 
 private func save_object_unlimited(req: Request, config: app_config) async throws -> Response {
-    let filenameValues = req.headers["X-File-Name"]
+    let filenameValues: [String] = req.headers["X-File-Name"]
     guard filenameValues.count == 1,
-          let decodedFilename = filenameValues[0].removingPercentEncoding,
+          let decodedFilename: String = filenameValues[0].removingPercentEncoding,
           filenameValues[0].isEmpty == false,
           decodedFilename.unicodeScalars.allSatisfy({
               !CharacterSet.controlCharacters.contains($0)
@@ -67,7 +67,7 @@ private func save_object_unlimited(req: Request, config: app_config) async throw
           !decodedFilename.contains("/"),
           !decodedFilename.contains("\\"),
           !decodedFilename.contains("\0"),
-          let filename = try? decodedFilename.sanitize(),
+          let filename: String = try? decodedFilename.sanitize(),
           filename.utf8.count <= 255 else {
         return try await upload_error(
             "A single valid file name header is required.",
@@ -84,8 +84,8 @@ private func save_object_unlimited(req: Request, config: app_config) async throw
         )
     }
 
-    let directory = config.object_store_directory
-    let directoryPath = FilePath(directory)
+    let directory: String = config.object_store_directory
+    let directoryPath: FilePath = FilePath(directory)
     if !FileManager.default.fileExists(atPath: directory) {
         try await FileSystem.shared.createDirectory(
             at: directoryPath,
@@ -93,16 +93,16 @@ private func save_object_unlimited(req: Request, config: app_config) async throw
         )
     }
 
-    let id = UUID().uuidString.lowercased()
-    let temporaryPath = directoryPath.appending("\(id).uploading").string
-    let finalPath = directoryPath.appending(id).string
-    let contentType = validated_content_type(req.headers.contentType)
-    let fileExtension = extracted_extension(from: filename)
-    var metadataCreated = false
-    var finalCreated = false
+    let id: String = UUID().uuidString.lowercased()
+    let temporaryPath: String = directoryPath.appending("\(id).uploading").string
+    let finalPath: String = directoryPath.appending(id).string
+    let contentType: String = validated_content_type(req.headers.contentType)
+    let fileExtension: String? = extracted_extension(from: filename)
+    var metadataCreated: Bool = false
+    var finalCreated: Bool = false
 
     do {
-        let stored = try await withThrowingTaskGroup(of: StoredUpload.self) { group in
+        let stored: StoredUpload = try await withThrowingTaskGroup(of: StoredUpload.self) { group in
             group.addTask {
                 try await stream_upload(
                     req: req,
@@ -115,14 +115,14 @@ private func save_object_unlimited(req: Request, config: app_config) async throw
                 throw UploadError.timedOut
             }
 
-            guard let result = try await group.next() else {
+            guard let result: StoredUpload = try await group.next() else {
                 throw Abort(.internalServerError)
             }
             group.cancelAll()
             return result
         }
 
-        let object = FileObject(
+        let object: FileObject = FileObject(
             id: id,
             originalFilename: filename,
             fileExtension: fileExtension,
@@ -187,12 +187,12 @@ private func stream_upload(
         options: .newFile(replaceExisting: false)
     ) { fileHandle in
         var byteCount: Int64 = 0
-        var hasher = SHA256()
+        var hasher: SHA256 = SHA256()
 
         try await fileHandle.withBufferedWriter(capacity: .mebibytes(4)) { writer in
-            for try await byteBuffer in req.body {
+            for try await byteBuffer: Request.Body.AsyncIterator.Element in req.body {
                 try Task.checkCancellation()
-                let readable = Int64(byteBuffer.readableBytes)
+                let readable: Int64 = Int64(byteBuffer.readableBytes)
                 let (nextCount, overflow) = byteCount.addingReportingOverflow(readable)
                 guard !overflow, nextCount <= maximumSize else {
                     throw UploadError.tooLarge
@@ -204,25 +204,25 @@ private func stream_upload(
         }
 
         guard byteCount > 0 else { throw UploadError.empty }
-        let digest = hasher.finalize().map { String(format: "%02x", $0) }.joined()
+        let digest: String = hasher.finalize().map { String(format: "%02x", $0) }.joined()
         return StoredUpload(byteSize: byteCount, sha256: digest)
     }
 }
 
 private func declared_size_exceeds_limit(req: Request, maximum: Int64) -> Bool {
-    let candidates = [
+    let candidates: [String?] = [
         req.headers.first(name: .contentLength),
         req.headers["X-File-Size"].count == 1 ? req.headers["X-File-Size"][0] : nil,
     ]
     return candidates.compactMap { $0 }.contains { value in
-        guard let size = Int64(value), size >= 0 else { return false }
+        guard let size: Int64 = Int64(value), size >= 0 else { return false }
         return size > maximum
     }
 }
 
 private func validated_content_type(_ mediaType: HTTPMediaType?) -> String {
-    guard let mediaType else { return HTTPMediaType.binary.serialize() }
-    let value = mediaType.serialize()
+    guard let mediaType: HTTPMediaType else { return HTTPMediaType.binary.serialize() }
+    let value: String = mediaType.serialize()
     guard value.utf8.count <= 255,
           value.unicodeScalars.allSatisfy({
               $0.isASCII && !CharacterSet.controlCharacters.contains($0)
@@ -235,7 +235,7 @@ private func validated_content_type(_ mediaType: HTTPMediaType?) -> String {
 }
 
 private func extracted_extension(from filename: String) -> String? {
-    guard let dot = filename.lastIndex(of: "."),
+    guard let dot: String.Index = filename.lastIndex(of: "."),
           dot != filename.startIndex,
           filename.index(after: dot) != filename.endIndex else {
         return nil

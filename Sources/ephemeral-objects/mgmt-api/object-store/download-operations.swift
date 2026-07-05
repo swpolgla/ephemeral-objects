@@ -29,7 +29,7 @@ func download_object(req: Request, config: app_config) async throws -> Response 
         return response
     }
 
-    guard let rawID = req.parameters.get("id"),
+    guard let rawID: String = req.parameters.get("id"),
           let uuid = UUID(uuidString: rawID),
           uuid.uuidString.lowercased() == rawID else {
         return file_not_found()
@@ -41,7 +41,7 @@ func download_object(req: Request, config: app_config) async throws -> Response 
         to: Date()
     ) ?? Date()
 
-    guard let record = try await claim_download(
+    guard let record: DownloadRecord = try await claim_download(
         id: rawID,
         cutoff: cutoff,
         directory: config.object_store_directory,
@@ -88,11 +88,11 @@ private func claim_download(
     database: any Database
 ) async throws -> DownloadRecord? {
     try await database.transaction { transaction in
-        guard let sql = transaction as? any SQLDatabase else {
+        guard let sql: any SQLDatabase = transaction as? any SQLDatabase else {
             throw Abort(.internalServerError, reason: "The database does not support SQL locking.")
         }
 
-        guard let record = try await sql.raw(
+        guard let record: DownloadRecord = try await sql.raw(
             """
             SELECT id, original_filename, content_type, byte_size, sha256, remaining_downloads
             FROM file_objects
@@ -106,7 +106,7 @@ private func claim_download(
             return nil
         }
 
-        let path = FilePath(directory).appending(id).string
+        let path: String = FilePath(directory).appending(id).string
         guard regular_file_size(at: path) == record.byteSize else {
             try await sql.raw(
                 "UPDATE file_objects SET state = 'deleting' WHERE id = \(bind: id)"
@@ -134,7 +134,7 @@ private func claim_download(
 }
 
 private func restore_download(id: String, database: any Database) async throws {
-    guard let sql = database as? any SQLDatabase else { return }
+    guard let sql: any SQLDatabase = database as? any SQLDatabase else { return }
     try await sql.raw(
         """
         UPDATE file_objects
@@ -151,7 +151,7 @@ func delete_object(
     logger: Logger
 ) async {
     do {
-        if let object = try await FileObject.find(id, on: database) {
+        if let object: FileObject = try await FileObject.find(id, on: database) {
             object.state = .deleting
             try await object.update(on: database)
         }
@@ -166,9 +166,9 @@ func delete_object(
 }
 
 private func regular_file_size(at path: String) -> Int64? {
-    guard let attributes = try? FileManager.default.attributesOfItem(atPath: path),
+    guard let attributes: [FileAttributeKey : Any] = try? FileManager.default.attributesOfItem(atPath: path),
           attributes[.type] as? FileAttributeType == .typeRegular,
-          let size = attributes[.size] as? NSNumber else {
+          let size: NSNumber = attributes[.size] as? NSNumber else {
         return nil
     }
     return size.int64Value

@@ -22,7 +22,7 @@ struct CreateFileObject: AsyncMigration {
             .unique(on: "id")
             .create()
 
-        if let sql = database as? any SQLDatabase {
+        if let sql: any SQLDatabase = database as? any SQLDatabase {
             try await sql.raw(
                 "CREATE INDEX file_objects_cleanup_idx ON file_objects (state, uploaded_at)"
             ).run()
