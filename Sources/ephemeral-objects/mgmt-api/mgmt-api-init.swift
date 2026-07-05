@@ -24,7 +24,7 @@ func register_file_api_calls(
     captchaVerifier: any CaptchaVerifying
 ) {
     let files: any RoutesBuilder = app.grouped("files")
-    let uploadLimiter = UploadLimiter(limit: config.maximum_concurrent_uploads)
+    let uploadLimiter: UploadLimiter = UploadLimiter(limit: config.maximum_concurrent_uploads)
 
     files.get(":id") { req in
         try await download_object(req: req, config: config)

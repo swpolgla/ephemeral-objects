@@ -30,9 +30,9 @@ func download_object(req: Request, config: app_config) async throws -> Response 
     }
 
     guard let rawID: String = req.parameters.get("id"),
-          let uuid = UUID(uuidString: rawID),
+          let uuid: UUID = UUID(uuidString: rawID),
           uuid.uuidString.lowercased() == rawID else {
-        return file_not_found()
+        return try await file_not_found(req: req)
     }
 
     let cutoff = Calendar(identifier: .gregorian).date(
@@ -47,7 +47,7 @@ func download_object(req: Request, config: app_config) async throws -> Response 
         directory: config.object_store_directory,
         database: req.db
     ) else {
-        return file_not_found()
+        return try await file_not_found(req: req)
     }
 
     let path = FilePath(config.object_store_directory).appending(record.id).string
@@ -196,6 +196,20 @@ private func content_disposition(filename: String) -> String {
     return "attachment; filename=\"\(fallback)\"; filename*=UTF-8''\(encoded)"
 }
 
-private func file_not_found() -> Response {
-    Response(status: .notFound, body: "The requested file does not exist.")
+private func file_not_found(req: Request) async throws -> Response {
+    let view: View = try await req.view.render(
+        "file-not-found",
+        PageContext(
+            title: "Page not found",
+            description: "This link may have expired, or the page may have moved.",
+            activePage: ""
+        )
+    )
+
+    let response: Response = Response(
+        status: .notFound,
+        body: .init(buffer: view.data)
+    )
+    response.headers.contentType = .html
+    return response
 }

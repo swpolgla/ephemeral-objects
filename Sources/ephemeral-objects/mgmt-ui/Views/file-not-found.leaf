@@ -1,0 +1,13 @@
+#extend("base"):
+    #export("content"):
+        <section class="not-found">
+            <p class="error-code">404</p>
+            <h1>File not found</h1>
+            <p>The address may be incorrect, the upload may have expired, or the allotted downloads may have been exhausted.</p>
+            <div class="button-row">
+                <a class="button button--dark" href="/">Share a file</a>
+                <a class="text-link" href="/about">Service information</a>
+            </div>
+        </section>
+    #endexport
+#endextend
