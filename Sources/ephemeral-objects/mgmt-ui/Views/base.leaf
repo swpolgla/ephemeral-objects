@@ -4,13 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="#(description)">
+    #if(robots):
+        <meta name="robots" content="#(robots)">
+    #endif
     <meta name="theme-color" content="#f6f4ef">
     <title>#(title) · Ephemeral</title>
     <link rel="icon" href="/assets/mark.svg?v=2" type="image/svg+xml">
-    <link rel="stylesheet" href="/css/site.css?v=3">
+    <link rel="stylesheet" href="/css/site.css?v=4">
     <script>window.CAP_CUSTOM_WASM_URL = "/captcha/assets/cap_wasm_bg.wasm";</script>
     <script src="/captcha/assets/widget.js" defer></script>
-    <script src="/js/site.js?v=4" defer></script>
+    <script src="/js/site.js?v=5" defer></script>
 </head>
 <body data-page="#(activePage)">
     <a class="skip-link" href="#main-content">Skip to content</a>

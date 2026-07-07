@@ -23,7 +23,8 @@ struct ephemeral_objects {
             register_file_api_calls(
                 app: app,
                 config: config,
-                captchaVerifier: CapCaptchaVerifier(config: capConfig)
+                captchaVerifier: CapCaptchaVerifier(config: capConfig),
+                captchaEndpoint: capConfig.publicEndpoint
             )
             register_page_api_calls(app: app, config: config, capConfig: capConfig)
 

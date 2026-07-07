@@ -4,6 +4,36 @@
     const activeNav = document.querySelector(`[data-nav="${page}"]`);
     if (activeNav) activeNav.setAttribute("aria-current", "page");
 
+    const downloadForm = document.querySelector("[data-download-form]");
+    if (downloadForm) {
+        const captchaWidget = downloadForm.querySelector("[data-download-captcha-widget]");
+        const captchaToken = downloadForm.querySelector("[data-download-captcha-token]");
+        const downloadButton = downloadForm.querySelector("[data-download-button]");
+        const downloadStatus = downloadForm.querySelector("[data-download-status]");
+
+        captchaWidget.addEventListener("solve", (event) => {
+            if (!event.detail?.token) return;
+            captchaToken.value = event.detail.token;
+            downloadButton.disabled = false;
+            downloadButton.textContent = "Download file";
+            downloadStatus.textContent = "Verification complete. The download button is ready.";
+        });
+
+        captchaWidget.addEventListener("error", () => {
+            captchaToken.value = "";
+            downloadButton.disabled = true;
+            downloadButton.textContent = "Verify to download";
+            downloadStatus.textContent = "The verification check could not be completed. Please try again.";
+        });
+
+        downloadForm.addEventListener("submit", (event) => {
+            if (captchaToken.value) return;
+            event.preventDefault();
+            downloadButton.disabled = true;
+            downloadStatus.textContent = "Complete the verification check before downloading.";
+        });
+    }
+
     const uploader = document.querySelector("[data-uploader]");
     if (!uploader) return;
 

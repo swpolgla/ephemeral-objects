@@ -1,0 +1,53 @@
+#extend("base"):
+    #export("content"):
+        <article class="information-page download-page">
+            <header class="page-heading">
+                <p class="state-label">File available</p>
+                <h1>Ready to download</h1>
+                <p>Review the file details, complete the verification check, then download the file.</p>
+            </header>
+
+            <section class="download-card" aria-labelledby="download-file-name">
+                <div class="download-file">
+                    <div class="file-badge" aria-hidden="true">FILE</div>
+                    <div class="download-file-details">
+                        <p class="state-label">Filename</p>
+                        <h2 id="download-file-name">#(filename)</h2>
+                    </div>
+                </div>
+
+                <dl class="service-facts download-facts">
+                    <div>
+                        <dt>Size</dt>
+                        <dd>#(byteSizeLabel)</dd>
+                    </div>
+                    <div>
+                        <dt>Type</dt>
+                        <dd>#(contentType)</dd>
+                    </div>
+                    <div>
+                        <dt>Remaining downloads</dt>
+                        <dd>#(remainingDownloadsLabel)</dd>
+                    </div>
+                </dl>
+
+                <div class="digest-block">
+                    <p class="state-label">SHA-256</p>
+                    <code>#(sha256)</code>
+                </div>
+
+                <form class="download-form" method="post" action="#(downloadURL)" data-download-form>
+                    <input type="hidden" name="captchaToken" data-download-captcha-token>
+                    <cap-widget
+                        data-download-captcha-widget
+                        data-cap-api-endpoint="#(captchaEndpoint)"
+                        data-cap-i18n-initial-state="Verify to download"
+                        data-cap-i18n-solved-label="Verified"
+                    ></cap-widget>
+                    <button class="button button--dark" type="submit" disabled data-download-button>Verify to download</button>
+                    <p class="download-status" role="status" aria-live="polite" data-download-status>Complete the verification check to enable the download.</p>
+                </form>
+            </section>
+        </article>
+    #endexport
+#endextend

@@ -18,16 +18,58 @@ private struct CaptchaErrorResponse: Content {
     let message: String
 }
 
+private struct DownloadCaptchaForm: Content {
+    let captchaToken: String
+}
+
 func register_file_api_calls(
     app: Application,
     config: app_config,
-    captchaVerifier: any CaptchaVerifying
+    captchaVerifier: any CaptchaVerifying,
+    captchaEndpoint: String
 ) {
     let files: any RoutesBuilder = app.grouped("files")
     let uploadLimiter: UploadLimiter = UploadLimiter(limit: config.maximum_concurrent_uploads)
 
     files.get(":id") { req in
-        try await download_object(req: req, config: config)
+        try await download_landing_page(
+            req: req,
+            config: config,
+            captchaEndpoint: captchaEndpoint
+        )
+    }
+
+    files.on(.POST, ":id", "download", body: .collect) { req async throws -> Response in
+        let form = try req.content.decode(DownloadCaptchaForm.self)
+        let token: String = form.captchaToken.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !token.isEmpty else {
+            return try await CaptchaErrorResponse(message: "A CAPTCHA token is required.")
+                .encodeResponse(status: .badRequest, for: req)
+        }
+
+        let isValid: Bool
+        do {
+            isValid = try await captchaVerifier.verify(token: token, for: req)
+        } catch {
+            req.logger.error("Cap verification failed: \(error)")
+            return try await CaptchaErrorResponse(
+                message: "CAPTCHA verification is temporarily unavailable."
+            )
+                .encodeResponse(status: .serviceUnavailable, for: req)
+        }
+
+        guard isValid else {
+            return try await CaptchaErrorResponse(
+                message: "The CAPTCHA token is invalid or has expired."
+            )
+                .encodeResponse(status: .forbidden, for: req)
+        }
+
+        return try await download_object(req: req, config: config)
+    }
+
+    files.get(":id", "download") { req in
+        req.redirect(to: "/files/\(req.parameters.get("id") ?? "")")
     }
 
     files.on(.HEAD, ":id") { _ in
@@ -149,11 +191,11 @@ struct ServiceInfoPageContext: Encodable {
     let downloadLimitLabel: String
 }
 
-private func unitLabel(_ value: Int, singular: String) -> String {
+func unitLabel(_ value: Int, singular: String) -> String {
     "\(value) \(value == 1 ? singular : "\(singular)s")"
 }
 
-private func binaryByteCountLabel(_ bytes: Int64) -> String {
+func binaryByteCountLabel(_ bytes: Int64) -> String {
     let units: [String] = ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]
     var value = Double(bytes)
     var unitIndex: Int = 0

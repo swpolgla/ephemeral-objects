@@ -22,6 +22,69 @@ private struct DownloadRecord: Codable, Sendable {
     }
 }
 
+struct DownloadPageContext: Encodable {
+    let title: String
+    let description: String
+    let activePage: String
+    let robots: String
+    let captchaEndpoint: String
+    let filename: String
+    let contentType: String
+    let byteSizeLabel: String
+    let sha256: String
+    let remainingDownloadsLabel: String
+    let downloadURL: String
+}
+
+func download_landing_page(
+    req: Request,
+    config: app_config,
+    captchaEndpoint: String
+) async throws -> Response {
+    guard let rawID: String = req.parameters.get("id"),
+          valid_file_id(rawID) else {
+        return try await file_not_found(req: req)
+    }
+
+    let cutoff = Calendar(identifier: .gregorian).date(
+        byAdding: .day,
+        value: -config.maximum_storage_duration,
+        to: Date()
+    ) ?? Date()
+
+    guard let record: DownloadRecord = try await find_download_metadata(
+        id: rawID,
+        cutoff: cutoff,
+        directory: config.object_store_directory,
+        database: req.db
+    ) else {
+        return try await file_not_found(req: req)
+    }
+
+    let view: View = try await req.view.render(
+        "file-download",
+        DownloadPageContext(
+            title: record.originalFilename,
+            description: "Review file details and verify before downloading.",
+            activePage: "",
+            robots: "noindex, nofollow, noarchive",
+            captchaEndpoint: captchaEndpoint,
+            filename: record.originalFilename,
+            contentType: record.contentType,
+            byteSizeLabel: binaryByteCountLabel(record.byteSize),
+            sha256: record.sha256,
+            remainingDownloadsLabel: unitLabel(record.remainingDownloads, singular: "download"),
+            downloadURL: "/files/\(record.id)/download"
+        )
+    )
+
+    let response: Response = Response(status: .ok, body: .init(buffer: view.data))
+    response.headers.contentType = .html
+    response.headers.replaceOrAdd(name: .cacheControl, value: "no-store")
+    response.headers.replaceOrAdd(name: "X-Robots-Tag", value: "noindex, nofollow, noarchive")
+    return response
+}
+
 func download_object(req: Request, config: app_config) async throws -> Response {
     guard req.headers.first(name: .range) == nil else {
         let response = Response(status: .rangeNotSatisfiable)
@@ -30,8 +93,7 @@ func download_object(req: Request, config: app_config) async throws -> Response 
     }
 
     guard let rawID: String = req.parameters.get("id"),
-          let uuid: UUID = UUID(uuidString: rawID),
-          uuid.uuidString.lowercased() == rawID else {
+          valid_file_id(rawID) else {
         return try await file_not_found(req: req)
     }
 
@@ -79,6 +141,40 @@ func download_object(req: Request, config: app_config) async throws -> Response 
         try? await restore_download(id: record.id, database: req.db)
         throw error
     }
+}
+
+private func find_download_metadata(
+    id: String,
+    cutoff: Date,
+    directory: String,
+    database: any Database
+) async throws -> DownloadRecord? {
+    guard let sql: any SQLDatabase = database as? any SQLDatabase else {
+        throw Abort(.internalServerError, reason: "The database does not support SQL queries.")
+    }
+
+    guard let record: DownloadRecord = try await sql.raw(
+        """
+        SELECT id, original_filename, content_type, byte_size, sha256, remaining_downloads
+        FROM file_objects
+        WHERE id = \(bind: id)
+          AND state = 'available'
+          AND uploaded_at > \(bind: cutoff)
+          AND remaining_downloads > 0
+        """
+    ).first(decoding: DownloadRecord.self) else {
+        return nil
+    }
+
+    let path: String = FilePath(directory).appending(id).string
+    guard regular_file_size(at: path) == record.byteSize else {
+        try await sql.raw(
+            "UPDATE file_objects SET state = 'deleting' WHERE id = \(bind: id)"
+        ).run()
+        return nil
+    }
+
+    return record
 }
 
 private func claim_download(
@@ -196,6 +292,11 @@ private func content_disposition(filename: String) -> String {
     return "attachment; filename=\"\(fallback)\"; filename*=UTF-8''\(encoded)"
 }
 
+private func valid_file_id(_ rawID: String) -> Bool {
+    guard let uuid: UUID = UUID(uuidString: rawID) else { return false }
+    return uuid.uuidString.lowercased() == rawID
+}
+
 private func file_not_found(req: Request) async throws -> Response {
     let view: View = try await req.view.render(
         "file-not-found",
@@ -211,5 +312,6 @@ private func file_not_found(req: Request) async throws -> Response {
         body: .init(buffer: view.data)
     )
     response.headers.contentType = .html
+    response.headers.replaceOrAdd(name: "X-Robots-Tag", value: "noindex, nofollow, noarchive")
     return response
 }
