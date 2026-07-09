@@ -7,6 +7,9 @@
     #if(robots):
         <meta name="robots" content="#(robots)">
     #endif
+    #if(canonicalURL):
+        <link rel="canonical" href="#(canonicalURL)">
+    #endif
     <meta name="theme-color" content="#f6f4ef">
     <title>#(title) · Ephemeral</title>
     <link rel="icon" href="/assets/mark.svg?v=2" type="image/svg+xml">

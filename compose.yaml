@@ -25,6 +25,7 @@ services:
       DATABASE_PASSWORD_FILE: /run/secrets/postgres_password
       CAP_SITE_KEY: ${CAP_SITE_KEY}
       CAP_SECRET_FILE: /run/secrets/cap_site_secret
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-https://localhost}
       LOG_LEVEL: ${APP_LOG_LEVEL:-info}
     secrets:
       - postgres_password

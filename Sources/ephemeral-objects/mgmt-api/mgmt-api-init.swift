@@ -112,18 +112,41 @@ func register_page_api_calls(
     config: app_config,
     capConfig: CapConfiguration
 ) {
+    let publicOrigin: String = canonical_public_origin()
+
     app.get("health") { req async throws in
         _ = try await FileObject.query(on: req.db).limit(1).all()
         return Response(status: .ok, body: "ok")
+    }
+
+    app.get("robots.txt") { _ in
+        let response = Response(
+            status: .ok,
+            body: .init(string: robots_txt(publicOrigin: publicOrigin))
+        )
+        response.headers.contentType = .plainText
+        response.headers.replaceOrAdd(name: .cacheControl, value: "public, max-age=3600")
+        return response
+    }
+
+    app.get("sitemap.xml") { _ in
+        let response = Response(
+            status: .ok,
+            body: .init(string: sitemap_xml(publicOrigin: publicOrigin))
+        )
+        response.headers.contentType = HTTPMediaType(type: "application", subType: "xml")
+        response.headers.replaceOrAdd(name: .cacheControl, value: "public, max-age=3600")
+        return response
     }
 
     app.get { req async throws -> View in
         try await req.view.render(
             "home",
             HomePageContext(
-                title: "Share a file",
-                description: "Upload a file and receive a temporary download link.",
+                title: "Temporary file sharing",
+                description: "Upload a file and share it with a temporary download link. No account is required.",
                 activePage: "home",
+                canonicalURL: canonical_url(publicOrigin: publicOrigin, path: "/"),
                 captchaEndpoint: capConfig.publicEndpoint,
                 maximumFileSize: config.maximum_file_size,
                 maximumFileSizeLabel: binaryByteCountLabel(config.maximum_file_size),
@@ -140,6 +163,7 @@ func register_page_api_calls(
                 title: "Service information",
                 description: "File limits, retention, downloads, and security information for Ephemeral.",
                 activePage: "about",
+                canonicalURL: canonical_url(publicOrigin: publicOrigin, path: "/about"),
                 maximumFileSizeLabel: binaryByteCountLabel(config.maximum_file_size),
                 storageDurationLabel: unitLabel(config.maximum_storage_duration, singular: "day"),
                 downloadLimitLabel: unitLabel(config.maximum_downloads, singular: "download")
@@ -161,6 +185,7 @@ func register_page_api_calls(
             body: .init(buffer: view.data)
         )
         response.headers.contentType = .html
+        response.headers.replaceOrAdd(name: "X-Robots-Tag", value: "noindex, nofollow, noarchive")
         return response
     }
 }
@@ -175,6 +200,7 @@ struct HomePageContext: Encodable {
     let title: String
     let description: String
     let activePage: String
+    let canonicalURL: String
     let captchaEndpoint: String
     let maximumFileSize: Int64
     let maximumFileSizeLabel: String
@@ -186,9 +212,63 @@ struct ServiceInfoPageContext: Encodable {
     let title: String
     let description: String
     let activePage: String
+    let canonicalURL: String
     let maximumFileSizeLabel: String
     let storageDurationLabel: String
     let downloadLimitLabel: String
+}
+
+func canonical_public_origin() -> String {
+    canonical_public_origin(from: Environment.get("PUBLIC_ORIGIN"))
+}
+
+func canonical_public_origin(from configuredOrigin: String?) -> String {
+    let configured = configuredOrigin?
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+        .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+
+    guard let configured: String, !configured.isEmpty else {
+        return "https://localhost"
+    }
+    return configured
+}
+
+func canonical_url(publicOrigin: String, path: String) -> String {
+    "\(publicOrigin)\(path)"
+}
+
+func robots_txt(publicOrigin: String) -> String {
+    """
+    User-agent: *
+    Allow: /
+    Disallow: /files/
+    Disallow: /captcha/
+    Disallow: /health
+
+    User-agent: GPTBot
+    Disallow: /
+
+    User-agent: CCBot
+    Disallow: /
+
+    Sitemap: \(canonical_url(publicOrigin: publicOrigin, path: "/sitemap.xml"))
+
+    """
+}
+
+func sitemap_xml(publicOrigin: String) -> String {
+    """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <url>
+            <loc>\(canonical_url(publicOrigin: publicOrigin, path: "/"))</loc>
+        </url>
+        <url>
+            <loc>\(canonical_url(publicOrigin: publicOrigin, path: "/about"))</loc>
+        </url>
+    </urlset>
+
+    """
 }
 
 func unitLabel(_ value: Int, singular: String) -> String {
